@@ -174,11 +174,17 @@ def menu_sons(z: Zowi):
         _opt('s', 'Triar so predefinit')
         _opt('t', 'Tocar nota (freqüència + durada)')
         _opt('g', 'Triar gest predefinit')
+        _opt('i', 'Marxa Imperial (Star Wars)')
         _opt('q', 'Tornar al menú principal')
         _end()
         op = input("  Tria: ").strip()
 
-        if op == 's':
+        if op == 'i':
+            print("  → Que la Força t'acompanyi...")
+            z.set_mouth('angry')
+            z.play_notes(Zowi.IMPERIAL_MARCH)
+            z.set_mouth('happyOpen')
+        elif op == 's':
             print()
             for i, (nom, sid) in enumerate(song_list):
                 print(f"    {i:>2}. {nom:<20} (ID {sid})")

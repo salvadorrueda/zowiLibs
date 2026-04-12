@@ -106,6 +106,65 @@ class Zowi:
         'fretful': 9, 'magic': 10, 'wave': 11, 'victory': 12, 'fail': 13,
     }
 
+    # ------------------------------------------------------------------
+    # La Marxa Imperial (Star Wars) — llista de (freq_hz, durada_ms)
+    # Tempo: 100 BPM  →  Q=600ms  E=300ms  S=150ms  DE=450ms  H=1200ms
+    # freq=0 indica silenci/pausa
+    # ------------------------------------------------------------------
+    IMPERIAL_MARCH = [
+        # Frase 1: G G G  Eb(.) Bb  G  Eb(.) Bb  G(mitja)
+        (392, 600),   # G4  Q
+        (392, 600),   # G4  Q
+        (392, 600),   # G4  Q
+        (311, 450),   # Eb4 DE
+        (466, 150),   # Bb4 S
+        (392, 600),   # G4  Q
+        (311, 450),   # Eb4 DE
+        (466, 150),   # Bb4 S
+        (392, 1200),  # G4  H
+
+        # Frase 2: D5 D5 D5  Eb5(.) Bb4  Gb4  Eb4(.) Bb4  G4(mitja)
+        (587, 600),   # D5  Q
+        (587, 600),   # D5  Q
+        (587, 600),   # D5  Q
+        (622, 450),   # Eb5 DE
+        (466, 150),   # Bb4 S
+        (370, 600),   # Gb4 Q
+        (311, 450),   # Eb4 DE
+        (466, 150),   # Bb4 S
+        (392, 1200),  # G4  H
+
+        # Frase 3 — pujada: G5  G4(.) G4  G5  Gb5(.) F5  E5 Eb5 E5 silenci Ab4 Db5
+        (784, 600),   # G5  Q
+        (392, 450),   # G4  DE
+        (392, 150),   # G4  S
+        (784, 600),   # G5  Q
+        (740, 450),   # Gb5 DE
+        (698, 150),   # F5  S
+        (659, 150),   # E5  S
+        (622, 150),   # Eb5 S
+        (659, 300),   # E5  E
+        (0,   300),   # silenci E
+        (415, 300),   # Ab4 E
+        (554, 600),   # Db5 Q
+
+        # Frase 4 — baixada: C5(.) B4 Bb4 A4 Bb4 silenci Eb4 Gb4 Eb4(.) Gb4 Bb4 G4(.) Bb4 D5(mitja)
+        (523, 450),   # C5  DE
+        (494, 150),   # B4  S
+        (466, 150),   # Bb4 S
+        (440, 150),   # A4  S
+        (466, 300),   # Bb4 E
+        (0,   300),   # silenci E
+        (311, 300),   # Eb4 E
+        (370, 600),   # Gb4 Q
+        (311, 450),   # Eb4 DE
+        (370, 150),   # Gb4 S
+        (466, 600),   # Bb4 Q
+        (392, 450),   # G4  DE
+        (466, 150),   # Bb4 S
+        (587, 1200),  # D5  H
+    ]
+
     # IDs de moviment (per usar amb move())
     STOP          = 0
     WALK_FORWARD  = 1
@@ -371,6 +430,32 @@ class Zowi:
         """
         self._send(f'T {freq_hz} {duration_ms}')
         self._wait_ack()
+
+    def play_notes(self, notes: list, gap_ms: int = 25):
+        """
+        Reprodueix una seqüència de notes.
+
+        Cada nota és una tupla (freq_hz, duration_ms).
+        freq_hz = 0 indica un silenci de duration_ms mil·lisegons.
+
+        Args:
+            notes:  Llista de tuples (freq_hz, duration_ms).
+            gap_ms: Silenci entre notes en ms (per separació musical natural).
+
+        Exemple:
+            z.play_notes(Zowi.IMPERIAL_MARCH)
+            z.play_notes([(440, 500), (0, 200), (523, 500)])
+        """
+        for freq, duration in notes:
+            if freq == 0:
+                time.sleep(duration / 1000.0)
+            else:
+                # Envia la nota amb durada lleugerament escurçada per crear
+                # una separació natural entre notes consecutives.
+                play_dur = max(30, duration - gap_ms)
+                self._send(f'T {freq} {play_dur}')
+                self._wait_ack()
+                time.sleep(duration / 1000.0)
 
     # ------------------------------------------------------------------
     # Gestos (moviment + so + cara combinats)
