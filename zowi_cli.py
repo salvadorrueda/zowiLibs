@@ -358,7 +358,7 @@ if __name__ == '__main__':
         port = sys.argv[1]
     else:
         ports = serial.tools.list_ports.comports()
-        usable = [p for p in ports if 'USB' in p.device or 'ACM' in p.device]
+        usable = [p for p in ports if any(k in p.device for k in ('USB', 'ACM', 'rfcomm'))]
         if len(usable) == 1:
             port = usable[0].device
             print(f"Port detectat automàticament: {port}")
