@@ -9,6 +9,8 @@ zowi_cli.py — Interfície interactiva per controlar el robot Zowi per teclat.
 
 import sys
 import time
+import tty
+import termios
 
 import serial.tools.list_ports
 
@@ -293,6 +295,138 @@ def menu_raw(z: Zowi):
 
 
 # ---------------------------------------------------------------------------
+# Control per teclat en temps real
+# ---------------------------------------------------------------------------
+
+def _getch():
+    """Llegeix un sol caràcter sense esperar Enter (Linux/macOS)."""
+    fd = sys.stdin.fileno()
+    old = termios.tcgetattr(fd)
+    try:
+        tty.setraw(fd)
+        ch = sys.stdin.read(1)
+        # Seqüències d'escape per les tecles de fletxa: \x1b [ A/B/C/D
+        if ch == '\x1b':
+            ch2 = sys.stdin.read(1)
+            ch3 = sys.stdin.read(1)
+            ch = ch + ch2 + ch3
+    finally:
+        termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    return ch
+
+
+def menu_control_teclat(z: Zowi):
+    """
+    Mode de control en temps real amb les tecles del teclat.
+
+    Tecles de moviment:
+      ↑  /  W   →  Caminar endavant
+      ↓  /  S   →  Caminar enrere
+      ←  /  A   →  Girar esquerra
+      →  /  D   →  Girar dreta
+         Espai  →  Stop
+         J      →  Saltar
+         U      →  UpDown
+         X      →  Swing
+         T      →  Tremolor (Jitter)
+         Q / ESC→  Sortir
+    """
+    _title("CONTROL PER TECLAT  (temps real)")
+    print("  │")
+    print("  │   ↑ / W    → Caminar endavant")
+    print("  │   ↓ / S    → Caminar enrere")
+    print("  │   ← / A    → Girar esquerra")
+    print("  │   → / D    → Girar dreta")
+    print("  │   ESPAI    → Stop")
+    print("  │   J        → Saltar")
+    print("  │   U        → UpDown")
+    print("  │   X        → Swing")
+    print("  │   T        → Tremolor")
+    print("  │   Q / ESC  → Sortir")
+    print("  │")
+    _end()
+    print("  (Mode actiu. Prem una tecla...)\n")
+
+    # Durades per defecte
+    T_walk  = 800   # ms per pas de caminar
+    T_turn  = 800   # ms per pas de gir
+    T_jump  = 800   # ms per salt
+    T_move  = 800   # ms per altres moviments
+
+    # Accions disponibles i descripcions
+    ARROW_UP    = '\x1b[A'
+    ARROW_DOWN  = '\x1b[B'
+    ARROW_RIGHT = '\x1b[C'
+    ARROW_LEFT  = '\x1b[D'
+
+    last_action = ''
+
+    while True:
+        key = _getch()
+
+        if key in ('q', 'Q', '\x1b'):
+            # ESC sol (sense seqüència de fletxa) també surt
+            if key == '\x1b':
+                # Si era ESC sense fletxa, sortim
+                pass
+            print("\n  → Sortint del mode teclat...")
+            z.stop()
+            break
+
+        action = None
+
+        if key in (ARROW_UP, 'w', 'W'):
+            action = 'forward'
+            print("\r  → Endavant          ", end='', flush=True)
+            z.move(Zowi.WALK_FORWARD, T=T_walk, h=15)
+
+        elif key in (ARROW_DOWN, 's', 'S'):
+            action = 'backward'
+            print("\r  → Enrere            ", end='', flush=True)
+            z.move(Zowi.WALK_BACKWARD, T=T_walk, h=15)
+
+        elif key in (ARROW_LEFT, 'a', 'A'):
+            action = 'left'
+            print("\r  → Esquerra          ", end='', flush=True)
+            z.move(Zowi.TURN_LEFT, T=T_turn, h=15)
+
+        elif key in (ARROW_RIGHT, 'd', 'D'):
+            action = 'right'
+            print("\r  → Dreta             ", end='', flush=True)
+            z.move(Zowi.TURN_RIGHT, T=T_turn, h=15)
+
+        elif key == ' ':
+            action = 'stop'
+            print("\r  → Stop              ", end='', flush=True)
+            z.stop()
+
+        elif key in ('j', 'J'):
+            action = 'jump'
+            print("\r  → Saltant!          ", end='', flush=True)
+            z.move(Zowi.JUMP, T=T_jump, h=20)
+
+        elif key in ('u', 'U'):
+            action = 'updown'
+            print("\r  → UpDown            ", end='', flush=True)
+            z.move(Zowi.UPDOWN, T=T_move, h=20)
+
+        elif key in ('x', 'X'):
+            action = 'swing'
+            print("\r  → Swing             ", end='', flush=True)
+            z.move(Zowi.SWING, T=T_move, h=20)
+
+        elif key in ('t', 'T'):
+            action = 'jitter'
+            print("\r  → Tremolor          ", end='', flush=True)
+            z.move(Zowi.JITTER, T=500, h=20)
+
+        else:
+            print(f"\r  [tecla ignorada: {repr(key)}]  ", end='', flush=True)
+
+        last_action = action or last_action
+
+
+# ---------------------------------------------------------------------------
 # Helper d'entrada numèrica
 # ---------------------------------------------------------------------------
 
@@ -323,6 +457,7 @@ def main(port: str):
             _opt('3', 'Sons i gestos')
             _opt('4', 'Sensors i informació')
             _opt('5', 'Comanda en brut')
+            _opt('6', 'Control per teclat  (temps real)')
             _opt('q', 'Sortir')
             _end()
 
@@ -338,6 +473,8 @@ def main(port: str):
                 menu_sensors(z)
             elif op == '5':
                 menu_raw(z)
+            elif op == '6':
+                menu_control_teclat(z)
             elif op == 'q':
                 print("\n  Tornant a posició de repòs...")
                 z.stop()
