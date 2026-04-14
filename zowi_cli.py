@@ -11,6 +11,7 @@ import sys
 import time
 import tty
 import termios
+import subprocess
 
 import serial.tools.list_ports
 
@@ -438,6 +439,45 @@ def _ask_int(prompt: str, default):
         return default
 
 
+def _setup_bluetooth_rfcomm(default_addr: str = 'B4:9D:0B:31:E3:55',
+                            default_dev: str = '/dev/rfcomm0',
+                            default_channel: int = 1) -> str:
+    """Pregunta i configura el bind Bluetooth RFCOMM. Retorna el port a usar."""
+    use_bt = input("Vols connectar per Bluetooth? [s/N]: ").strip().lower()
+    if use_bt not in ('s', 'si', 'sí', 'y', 'yes'):
+        return ''
+
+    addr = input(f"Adreça Bluetooth [{default_addr}]: ").strip() or default_addr
+    dev = input(f"Dispositiu RFCOMM [{default_dev}]: ").strip() or default_dev
+    channel_raw = input(f"Canal RFCOMM [{default_channel}]: ").strip()
+    try:
+        channel = int(channel_raw) if channel_raw else default_channel
+    except ValueError:
+        channel = default_channel
+
+    print(f"Intentant bind Bluetooth: {dev} -> {addr} (canal {channel})")
+    cmd = ['sudo', 'rfcomm', 'bind', dev, addr, str(channel)]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode == 0:
+        print(f"Bind correcte. Port Bluetooth disponible a {dev}")
+        return dev
+
+    stderr = (result.stderr or '').strip()
+    stdout = (result.stdout or '').strip()
+    msg = stderr or stdout or 'Error desconegut executant rfcomm.'
+
+    if 'already bound' in msg.lower() or 'address already in use' in msg.lower():
+        print(f"{dev} ja estava vinculat. Continuem amb aquest port.")
+        return dev
+
+    print(f"No s'ha pogut fer el bind Bluetooth: {msg}")
+    retry = input("Vols continuar igualment amb /dev/rfcomm0? [s/N]: ").strip().lower()
+    if retry in ('s', 'si', 'sí', 'y', 'yes'):
+        return default_dev
+    return ''
+
+
 # ---------------------------------------------------------------------------
 # Menú principal
 # ---------------------------------------------------------------------------
@@ -494,25 +534,29 @@ if __name__ == '__main__':
     if len(sys.argv) >= 2:
         port = sys.argv[1]
     else:
-        ports = serial.tools.list_ports.comports()
-        usable = [p for p in ports if any(k in p.device for k in ('USB', 'ACM', 'rfcomm'))]
-        if len(usable) == 1:
-            port = usable[0].device
-            print(f"Port detectat automàticament: {port}")
-        elif len(usable) > 1:
-            print("Ports disponibles:")
-            for i, p in enumerate(usable):
-                print(f"  [{i}] {p.device}  ({p.description})")
-            try:
-                idx = int(input("Tria un número: ").strip())
-                port = usable[idx].device
-            except (ValueError, IndexError):
-                print("Selecció no vàlida.")
-                sys.exit(1)
+        bt_port = _setup_bluetooth_rfcomm()
+        if bt_port:
+            port = bt_port
         else:
-            print("No s'ha trobat cap port sèrie USB.")
-            print("Comprova que el cable està connectat i que tens permisos:")
-            print("  sudo chmod 666 /dev/ttyACM0   (o el port corresponent)")
-            sys.exit(1)
+            ports = serial.tools.list_ports.comports()
+            usable = [p for p in ports if any(k in p.device for k in ('USB', 'ACM', 'rfcomm'))]
+            if len(usable) == 1:
+                port = usable[0].device
+                print(f"Port detectat automàticament: {port}")
+            elif len(usable) > 1:
+                print("Ports disponibles:")
+                for i, p in enumerate(usable):
+                    print(f"  [{i}] {p.device}  ({p.description})")
+                try:
+                    idx = int(input("Tria un número: ").strip())
+                    port = usable[idx].device
+                except (ValueError, IndexError):
+                    print("Selecció no vàlida.")
+                    sys.exit(1)
+            else:
+                print("No s'ha trobat cap port sèrie USB.")
+                print("Comprova que el cable està connectat i que tens permisos:")
+                print("  sudo chmod 666 /dev/ttyACM0   (o el port corresponent)")
+                sys.exit(1)
 
     main(port)
