@@ -9,6 +9,7 @@ zowi_cli.py — Interfície interactiva per controlar el robot Zowi per teclat.
 
 import sys
 import time
+from datetime import datetime
 import tty
 import termios
 import subprocess
@@ -125,6 +126,7 @@ def menu_cara(z: Zowi):
         _opt('n', 'Triar cara per nom')
         _opt('a', 'Animació littleUuh')
         _opt('s', 'Scroll de text')
+        _opt('h', 'Hora actual (scroll HH:MM)')
         _opt('c', 'Netejar cara (tot apagat)')
         _opt('b', 'Bitmap personalitzat (32 bits)')
         _opt('q', 'Tornar al menú principal')
@@ -162,6 +164,12 @@ def menu_cara(z: Zowi):
                 z.scroll_text(text, delay=delay / 1000.0, repeat=repeat)
             else:
                 print("  Text buit. Cancellat.")
+        elif op == 'h':
+            delay = _ask_int("Durada entre frames (ms)?", 250)
+            repeat = _ask_int("Quantes vegades?", 1)
+            now_text = datetime.now().strftime('%H:%M')
+            print(f"  → Mostrant hora {now_text}...")
+            z.scroll_text(now_text, delay=delay / 1000.0, repeat=repeat)
         elif op == 'c':
             z.clear_mouth()
             print("  → Cara apagada.")
