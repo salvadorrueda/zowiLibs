@@ -17,6 +17,7 @@ import subprocess
 import serial.tools.list_ports
 
 from zowi import Zowi
+from zowi_llm_controller import run_llm_control_menu
 
 
 # ---------------------------------------------------------------------------
@@ -516,6 +517,7 @@ def main(port: str):
             _opt('4', 'Sensors i informació')
             _opt('5', 'Comanda en brut')
             _opt('6', 'Control per teclat  (temps real)')
+            _opt('7', 'Control IA (LLM)  llenguatge natural')
             _opt('q', 'Sortir')
             _end()
 
@@ -533,6 +535,8 @@ def main(port: str):
                 menu_raw(z)
             elif op == '6':
                 menu_control_teclat(z)
+            elif op == '7':
+                run_llm_control_menu(z)
             elif op == 'q':
                 print("\n  Tornant a posició de repòs...")
                 z.stop()
