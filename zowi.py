@@ -27,6 +27,7 @@ Protocol:
 import re
 import sys
 import time
+import unicodedata
 
 import serial
 import serial.tools.list_ports
@@ -75,6 +76,55 @@ class Zowi:
 
     # Llista de valors de cares en ordre d'ID (0-30), per lookup per índex numèric
     _FACE_BY_ID = list(FACES.values())
+
+    # ------------------------------------------------------------------
+    # Font 5×5 (files) per generar scroll en matriu real 5×6 (cols)
+    # Cada caràcter: tuple de 5 strings (files), cada string té 5 columns.
+    # ------------------------------------------------------------------
+    CHAR_FONT = {
+        ' ': ("00000", "00000", "00000", "00000", "00000"),
+        'A': ("01110", "10001", "11111", "10001", "10001"),
+        'B': ("11110", "10001", "11110", "10001", "11110"),
+        'C': ("01110", "10001", "10000", "10001", "01110"),
+        'D': ("11110", "10001", "10001", "10001", "11110"),
+        'E': ("11111", "10000", "11110", "10000", "11111"),
+        'F': ("11111", "10000", "11110", "10000", "10000"),
+        'G': ("01110", "10000", "10111", "10001", "01110"),
+        'H': ("10001", "10001", "11111", "10001", "10001"),
+        'I': ("11111", "00100", "00100", "00100", "11111"),
+        'J': ("00001", "00001", "00001", "10001", "01110"),
+        'K': ("10001", "10010", "11100", "10010", "10001"),
+        'L': ("10000", "10000", "10000", "10000", "11111"),
+        'M': ("10001", "11011", "10101", "10001", "10001"),
+        'N': ("10001", "11001", "10101", "10011", "10001"),
+        'O': ("01110", "10001", "10001", "10001", "01110"),
+        'P': ("11110", "10001", "11110", "10000", "10000"),
+        'Q': ("01110", "10001", "10001", "10011", "01111"),
+        'R': ("11110", "10001", "11110", "10010", "10001"),
+        'S': ("01111", "10000", "01110", "00001", "11110"),
+        'T': ("11111", "00100", "00100", "00100", "00100"),
+        'U': ("10001", "10001", "10001", "10001", "01110"),
+        'V': ("10001", "10001", "10001", "01010", "00100"),
+        'W': ("10001", "10001", "10101", "11011", "10001"),
+        'X': ("10001", "01010", "00100", "01010", "10001"),
+        'Y': ("10001", "01010", "00100", "00100", "00100"),
+        'Z': ("11111", "00010", "00100", "01000", "11111"),
+        '0': ("01110", "10011", "10101", "11001", "01110"),
+        '1': ("00100", "01100", "00100", "00100", "01110"),
+        '2': ("01110", "10001", "00010", "00100", "11111"),
+        '3': ("11110", "00001", "00110", "00001", "11110"),
+        '4': ("10010", "10010", "11111", "00010", "00010"),
+        '5': ("11111", "10000", "11110", "00001", "11110"),
+        '6': ("01110", "10000", "11110", "10001", "01110"),
+        '7': ("11111", "00010", "00100", "01000", "01000"),
+        '8': ("01110", "10001", "01110", "10001", "01110"),
+        '9': ("01110", "10001", "01111", "00001", "01110"),
+        '.': ("00000", "00000", "00000", "00110", "00110"),
+        ',': ("00000", "00000", "00000", "00110", "00100"),
+        '!': ("00100", "00100", "00100", "00000", "00100"),
+        '?': ("01110", "00001", "00110", "00000", "00100"),
+        '-': ("00000", "00000", "01110", "00000", "00000"),
+    }
 
     # Animació littleUuh (8 frames)
     ANIM_LITTLE_UUH = [
@@ -395,6 +445,47 @@ class Zowi:
         for _ in range(repeat):
             for frame in frames:
                 self._send(f'L {frame:032b}')
+                self._wait_ack()
+                time.sleep(delay)
+
+    def scroll_text(self, text: str, delay: float = 0.3, repeat: int = 1):
+        """
+        Fa scroll de text a la matriu LED 5×6.
+
+        Args:
+            text:   Text a mostrar (es converteix a majúscules).
+            delay:  Temps en segons per cada frame del scroll.
+            repeat: Nombre de vegades que es repeteix el scroll.
+        """
+        normalized = unicodedata.normalize('NFD', text.upper())
+        normalized = ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+
+        # Construeix stream de columnes (cada columna = 5 files)
+        columns = [[0, 0, 0, 0, 0] for _ in range(6)]  # espai d'entrada
+
+        for char in normalized:
+            glyph = self.CHAR_FONT.get(char, self.CHAR_FONT[' '])
+            for col_idx in range(5):
+                column = [1 if glyph[row_idx][col_idx] == '1' else 0 for row_idx in range(5)]
+                columns.append(column)
+            columns.append([0, 0, 0, 0, 0])  # separació entre lletres
+
+        columns.extend([[0, 0, 0, 0, 0] for _ in range(6)])  # espai de sortida
+
+        # Finestra visible: 6 columnes (matriu 5x6)
+        for _ in range(repeat):
+            for offset in range(len(columns) - 5):
+                window = columns[offset:offset + 6]
+
+                bitmap = 0
+                for row in range(5):
+                    for col in range(6):
+                        if window[col][row]:
+                            linear_index = row * 6 + col  # row-major
+                            bit_index = 29 - linear_index
+                            bitmap |= (1 << bit_index)
+
+                self._send(f'L {bitmap:032b}')
                 self._wait_ack()
                 time.sleep(delay)
 

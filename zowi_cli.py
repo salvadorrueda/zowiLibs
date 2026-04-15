@@ -124,6 +124,7 @@ def menu_cara(z: Zowi):
         _opt('l', 'Llistat de totes les cares')
         _opt('n', 'Triar cara per nom')
         _opt('a', 'Animació littleUuh')
+        _opt('s', 'Scroll de text')
         _opt('c', 'Netejar cara (tot apagat)')
         _opt('b', 'Bitmap personalitzat (32 bits)')
         _opt('q', 'Tornar al menú principal')
@@ -152,6 +153,15 @@ def menu_cara(z: Zowi):
             r = _ask_int("Quantes vegades repetir?", 2)
             print("  → Animació littleUuh...")
             z.animate_mouth(Zowi.ANIM_LITTLE_UUH, delay=0.12, repeat=r)
+        elif op == 's':
+            text = input("  Text a visualitzar: ").strip()
+            if text:
+                delay = _ask_int("Durada entre frames (ms)?", 300)
+                repeat = _ask_int("Quantes vegades?", 1)
+                print(f"  → Scroll de '{text}'...")
+                z.scroll_text(text, delay=delay / 1000.0, repeat=repeat)
+            else:
+                print("  Text buit. Cancellat.")
         elif op == 'c':
             z.clear_mouth()
             print("  → Cara apagada.")
