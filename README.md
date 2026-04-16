@@ -8,6 +8,10 @@ S'ha afegit un mode de control amb IA que permet ordres com:
 - `camina endavant durant 2 segons`
 - `gira cap a la dreta`
 - `para`
+- `camina endavant 1 segon, gira a la dreta, para`
+
+Quan escrius diverses accions separades per comes, el controlador les divideix
+localment i envia **cada segment per separat** al model Ollama.
 
 ### Requisits
 
@@ -30,6 +34,7 @@ Opcional:
 export OLLAMA_MODEL="tinyllama:latest"
 export OLLAMA_URL="http://localhost:11434/api/chat"
 export ZOWI_LLM_DEBUG="1"
+export ZOWI_LLM_PROMPT_FILE="/ruta/al/meu_prompt.txt"
 ```
 
 Si `ZOWI_LLM_DEBUG=1`, el controlador mostra traça detallada del flux:
@@ -52,6 +57,10 @@ Executa `zowi_cli.py` i entra a l'opció:
 ```bash
 python zowi_llm_controller.py /dev/ttyACM0
 python zowi_llm_controller.py /dev/ttyACM0 --llm-debug
+python zowi_llm_controller.py /dev/ttyACM0 --ollama-model mistral:7b
+python zowi_llm_controller.py /dev/ttyACM0 --llm-prompt-file ./prompt_zowi.txt
 ```
 
 El flag `--llm-debug` activa el mateix mode de traça que `ZOWI_LLM_DEBUG=1`.
+`--ollama-model` permet provar models diferents ràpidament i `--llm-prompt-file`
+carrega un prompt personalitzat des d'un fitxer de text.

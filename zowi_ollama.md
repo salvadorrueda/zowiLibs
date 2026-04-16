@@ -19,12 +19,15 @@ Aquest document descriu **com està implementada** la funcionalitat de control e
 Pipeline intern de cada ordre de l'usuari:
 
 1. Usuari escriu text lliure (`IA> ...`) al menú IA.
-2. `parse_natural_command()` envia el text a Ollama (`POST /api/chat`) amb:
+2. Si hi ha comes, `process_text_command()` divideix el text en segments locals.
+3. Cada segment es processa de manera independent:
+  - fallback local de `stop`, o bé
+  - `parse_natural_command()` envia **només aquell segment** a Ollama (`POST /api/chat`) amb:
    - `system prompt` restrictiu
    - `format` JSON schema
-3. La resposta del model es parseja com JSON (`_extract_json`).
-4. `validate_action()` normalitza i limita valors per seguretat.
-5. `execute_action()` tradueix l'acció final a crides reals de `zowi.py`.
+4. La resposta del model es parseja com JSON (`_extract_action_payload`).
+5. `validate_action()` normalitza i limita valors per seguretat.
+6. `execute_action()` tradueix l'acció final a crides reals de `zowi.py`.
 
 ## 3) Integració al CLI
 
@@ -62,6 +65,7 @@ Paràmetres de configuració:
 - `OLLAMA_MODEL` (defecte: `tinyllama:latest`)
 - `OLLAMA_URL` (defecte: `http://localhost:11434/api/chat`)
 - `ZOWI_LLM_DEBUG` (`1/true/on/yes` per activar logs de depuració)
+- `ZOWI_LLM_PROMPT_FILE` (fitxer opcional amb system prompt personalitzat)
 
 Cos principal del `POST`:
 
@@ -80,6 +84,7 @@ Cos principal del `POST`:
 El `system prompt` demana explícitament:
 
 - Retornar només JSON (sense text extra)
+- Assumir que la petició és un únic segment, no una llista d'accions
 - Intents limitats: `walk|turn|stop|jump`
 - Regles de coherència:
   - `walk` només `forward/backward`
@@ -89,11 +94,12 @@ El `system prompt` demana explícitament:
 
 ## 7) Parsing robust i neteja JSON
 
-`_extract_json(text)` aplica:
+`_extract_action_payload(text)` aplica:
 
 - Eliminació de blocs markdown ```json ... ``` si hi són
-- Extracció del primer bloc `{...}` via regex
+- Extracció del primer bloc JSON via regex
 - `json.loads(...)`
+- Compatibilitat amb respostes antigues com `{"actions": [...]}` si només contenen una acció
 
 Si el model retorna text invàlid, es llença:
 
@@ -211,12 +217,15 @@ Per veure exactament què està passant al pipeline, activa:
 
 ```bash
 export ZOWI_LLM_DEBUG="1"
+export ZOWI_LLM_PROMPT_FILE="./prompt_zowi.txt"
 ```
 
 Alternativament, en mode standalone:
 
 ```bash
 python zowi_llm_controller.py /dev/ttyACM0 --llm-debug
+python zowi_llm_controller.py /dev/ttyACM0 --ollama-model mistral:7b
+python zowi_llm_controller.py /dev/ttyACM0 --llm-prompt-file ./prompt_zowi.txt
 ```
 
 Amb debug actiu, es mostren traces amb prefix `[LLM DEBUG]`:
