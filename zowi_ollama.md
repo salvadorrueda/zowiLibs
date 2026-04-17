@@ -13,6 +13,8 @@ Aquest document descriu **com està implementada** la funcionalitat de control e
   - Biblioteca base que envia comandes sèrie al robot (`walk`, `turn`, `jump`, `stop`, etc.).
 - `requirements.txt`
   - Dependències mínimes per aquesta part: `requests`, `pyserial`.
+- `zowi_llm_matrix_test.py`
+  - Script de proves de matriu (models × prompts × frases) sense executar moviments físics.
 
 ## 2) Arquitectura funcional
 
@@ -28,6 +30,9 @@ Pipeline intern de cada ordre de l'usuari:
 4. La resposta del model es parseja com JSON (`_extract_action_payload`).
 5. `validate_action()` normalitza i limita valors per seguretat.
 6. `execute_action()` tradueix l'acció final a crides reals de `zowi.py`.
+
+Nota: també existeix `interpret_text_command()` per obtenir la seqüència d'accions
+**sense** executar-la (mode de proves).
 
 ## 3) Integració al CLI
 
@@ -66,6 +71,12 @@ Paràmetres de configuració:
 - `OLLAMA_URL` (defecte: `http://localhost:11434/api/chat`)
 - `ZOWI_LLM_DEBUG` (`1/true/on/yes` per activar logs de depuració)
 - `ZOWI_LLM_PROMPT_FILE` (fitxer opcional amb system prompt personalitzat)
+
+En mode standalone, també es poden sobreescriure amb flags:
+
+- `--ollama-model`
+- `--ollama-url`
+- `--llm-prompt-file`
 
 Cos principal del `POST`:
 
@@ -239,6 +250,30 @@ Amb debug actiu, es mostren traces amb prefix `[LLM DEBUG]`:
 - acció validada
 - acció executada
 - avís explícit quan s'activa el fallback local
+
+## 11.2) Banc de proves models × prompts
+
+Per comparar interpretació entre models i prompts sense moure el robot:
+
+```bash
+python zowi_llm_matrix_test.py \
+  --models tinyllama:latest,mistral:7b \
+  --prompts prompts/prompt_default_ca.txt,prompts/prompt_strict_short_ca.txt \
+  --inputs "Camina endevant durant un segon, aturat un segon, i camina enrere un altre segon"
+```
+
+També pots carregar frases des d'un fitxer:
+
+```bash
+python zowi_llm_matrix_test.py \
+  --models tinyllama:latest \
+  --prompts prompts/prompt_default_ca.txt \
+  --input-file ./phrases.txt \
+  --debug
+```
+
+Sortida: una línia JSON per combinació amb `status=OK|ERROR`, model, prompt,
+frase d'entrada i accions interpretades.
 
 ## 12) Flux d'ús complet
 

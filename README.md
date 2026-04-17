@@ -64,3 +64,26 @@ python zowi_llm_controller.py /dev/ttyACM0 --llm-prompt-file ./prompt_zowi.txt
 El flag `--llm-debug` activa el mateix mode de traça que `ZOWI_LLM_DEBUG=1`.
 `--ollama-model` permet provar models diferents ràpidament i `--llm-prompt-file`
 carrega un prompt personalitzat des d'un fitxer de text.
+
+### Conjunt de proves (models + prompts)
+
+Per provar com s'interpreta una frase amb diferents models/prompts, sense moure el robot:
+
+```bash
+python zowi_llm_matrix_test.py \
+	--models tinyllama:latest,mistral:7b \
+	--prompts prompts/prompt_default_ca.txt,prompts/prompt_strict_short_ca.txt \
+	--inputs "Camina endevant durant un segon, aturat un segon, i camina enrere un altre segon"
+```
+
+Opcionalment, pots posar frases en un fitxer (una per línia):
+
+```bash
+python zowi_llm_matrix_test.py \
+	--models tinyllama:latest \
+	--prompts prompts/prompt_default_ca.txt \
+	--input-file ./phrases.txt \
+	--debug
+```
+
+L'script imprimeix una línia JSON per combinació amb `status=OK|ERROR` i les accions interpretades.

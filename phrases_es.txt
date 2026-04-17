@@ -1,0 +1,24 @@
+Camina adelante
+Camina hacia adelante durante un segundo
+Camina atrás
+Retrocede dos pasos
+Para
+Detente
+No te muevas
+Quédate quieto
+Gira a la derecha
+Gira a la izquierda
+Gira a la derecha durante dos segundos
+Salta
+Salta hacia adelante
+Camina adelante un segundo, para
+Retrocede un segundo, detente
+Camina adelante, gira a la derecha, para
+Corre adelante
+Muévete hacia atrás tres segundos
+Alto
+Quieto
+Atura
+Gira izquierda durante medio segundo
+Camina en línea recta
+Retroceso rápido

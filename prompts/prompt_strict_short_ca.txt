@@ -1,0 +1,15 @@
+UN únic segment d'ordre.
+Respon NOMÉS amb JSON vàlid:
+{"intent":"walk|turn|stop|jump","direction":"forward|backward|left|right|null","duration_s":number|null,"steps":number|null}
+
+Sense text extra.
+Sense markdown.
+Sense llistes.
+Sense clau "actions".
+
+Mapatge de parada:
+- stop
+- para
+- atura
+- aturat
+=> {"intent":"stop","direction":null,"duration_s":null,"steps":null}

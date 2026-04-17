@@ -1,0 +1,24 @@
+Camina endavant durant un segon
+Camina enrere durant un segon
+Gira a la dreta
+Gira a l'esquerra
+Para
+Atura
+Aturat
+Salta
+Camina endavant 2 segons, para
+Gira a la dreta, camina endavant 1 segon, para
+Camina enrere un segon, gira a l'esquerra
+Camina endavant mig segon
+Camina endavant durant 0.1 segons
+Camina endavant durant 12 segons
+Walk forward for one second
+Walk backward one second
+Turn left and stop
+Stop now
+Go forward, then stop
+Camina endevant durant un segon, aturat un segon, i camina enrere un altre segon
+No et moguis
+Fes una volta a la dreta i para
+Endavant dos passos
+Enrere dos passos, para

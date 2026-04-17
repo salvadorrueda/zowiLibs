@@ -51,7 +51,7 @@ class ZowiLLMController:
 
     def __init__(
         self,
-        zowi: Zowi,
+        zowi: Optional[Zowi],
         model: Optional[str] = None,
         ollama_url: Optional[str] = None,
         system_prompt: Optional[str] = None,
@@ -283,6 +283,11 @@ class ZowiLLMController:
         return action
 
     def execute_action(self, action: Action):
+        if self.zowi is None:
+            raise RuntimeError(
+                "No hi ha instància de Zowi (zowi=None). "
+                "Aquest controlador està en mode interpretació i no pot executar accions."
+            )
         self._debug(f"Executant acció: {action}")
         if action.intent == "walk":
             self.zowi.walk(steps=action.steps or 2, T=self.step_time_ms, direction=action.direction or "forward")
@@ -303,8 +308,11 @@ class ZowiLLMController:
 
         raise ValueError(f"Intent no implementat: {action.intent}")
 
-    def process_text_command(self, user_text: str) -> List[Action]:
-        """Divideix per comes i processa cada segment com una ordre independent."""
+    def interpret_text_command(self, user_text: str) -> List[Action]:
+        """Divideix per comes i interpreta cada segment com una ordre independent.
+
+        No executa moviments físics; només retorna la seqüència d'accions validada.
+        """
         segments = self._split_user_text(user_text)
         actions: List[Action] = []
 
@@ -316,8 +324,14 @@ class ZowiLLMController:
             else:
                 payload = self.parse_natural_command(segment)
                 action = self.validate_action(payload)
-            self.execute_action(action)
             actions.append(action)
+        return actions
+
+    def process_text_command(self, user_text: str) -> List[Action]:
+        """Interpreta i executa totes les accions d'un text natural."""
+        actions = self.interpret_text_command(user_text)
+        for action in actions:
+            self.execute_action(action)
         return actions
 
 
