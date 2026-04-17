@@ -96,3 +96,46 @@ PIN_RR = 5  (right foot)
 ```
 
 Trims are calibrated once and persisted to EEPROM. Robot name is stored at EEPROM address 5 (max 10 chars).
+
+
+### Actualitzant amb línia de comandes
+
+Connectat per USB. 
+Comprovar al journaclt -f que apareix /dev/ttyUSB0
+
+Executar avrdude i després de 3 attempts 
+Click al botó power de Zowi
+
+
+root@d00:/home/salvadorrueda/Developer/GitHub/zowilibs/code .hex# avrdude -c arduino -p m328p -P /dev/ttyUSB0 -b 115200 -U flash:w:./ZOWI_BASE_v2.hex 
+avrdude error: programmer is not responding
+avrdude warning: attempt 1 of 10: not in sync: resp=0x00
+avrdude error: programmer is not responding
+avrdude warning: attempt 2 of 10: not in sync: resp=0x00
+avrdude warning: attempt 3 of 10: not in sync: resp=0x26
+
+avrdude: AVR device initialized and ready to accept instructions
+avrdude: device signature = 0x1e950f (probably m328p)
+avrdude: Note: flash memory has been specified, an erase cycle will be performed.
+         To disable this feature, specify the -D option.
+avrdude: erasing chip
+avrdude: reading input file ./ZOWI_BASE_v2.hex for flash
+         with 30446 bytes in 1 section within [0, 0x76ed]
+         using 238 pages and 18 pad bytes
+avrdude: writing 30446 bytes flash ...
+
+Writing | ################################################## | 100% 4.23 s 
+
+avrdude: 30446 bytes of flash written
+avrdude: verifying flash memory against ./ZOWI_BASE_v2.hex
+
+Reading | ################################################## | 100% 3.09 s 
+
+avrdude: 30446 bytes of flash verified
+
+avrdude done.  Thank you.
+
+root@d00:/home/salvadorrueda/Developer/GitHub/zowilibs/code .hex#
+
+
+
